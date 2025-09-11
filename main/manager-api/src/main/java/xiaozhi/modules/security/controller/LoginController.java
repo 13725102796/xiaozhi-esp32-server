@@ -5,6 +5,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -99,6 +100,23 @@ public class LoginController {
             throw new RenException("请检测用户和密码是否输入错误");
         }
         return sysUserTokenService.createToken(userDTO.getId());
+    }
+
+    @PostMapping("/auto-login")
+    @Operation(summary = "自动登录")
+    public Result<TokenDTO> autoLogin(@RequestBody LoginDTO login) {
+        // 按照用户名获取用户
+        SysUserDTO userDTO = sysUserService.getByUsername(login.getUsername());
+        // 判断用户是否存在
+        if (Objects.isNull(userDTO)) {
+            throw new RenException("请检测用户和密码是否输入错误");
+        }
+        // 判断密码是否正确，不一样则进入if
+        if (PasswordUtils.matches(login.getPassword(),
+                userDTO.getPassword())) {
+            return sysUserTokenService.createToken(userDTO.getId());
+        }
+        throw new RenException("请检测用户和密码是否输入错误");
     }
 
     @PostMapping("/register")

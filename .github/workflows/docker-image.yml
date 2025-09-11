@@ -5,13 +5,18 @@ on:
     tags:
       - 'v*.*.*'  # 只在以 v 开头的标签推送时触发，例如 v1.0.0
   workflow_dispatch:
+env:
+  # 华为云容器镜像服务配置
+  HUAWEI_REGISTRY: swr.cn-north-4.myhuaweicloud.com
+  HUAWEI_NAMESPACE: fengye
+  SERVER_IMAGE_NAME: xiaozhi-server
+  WEB_IMAGE_NAME: xiaozhi-web
 
 jobs:
   release:
     name: Release Docker images
     runs-on: ubuntu-latest
     permissions:
-      packages: write
       contents: write
       id-token: write
       issues: write
@@ -29,18 +34,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           driver-opts: |
             network=host
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.TOKEN }}
+      # - name: Login to GitHub Container Registry
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: ghcr.io
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.TOKEN }}
+      - name: Login to Huawei Cloud Container Registry
+        run: |
+          echo "${{ secrets.HUAWEI_SWR_PASSWORD }}" | docker login ${{ env.HUAWEI_REGISTRY }} -u ${{ secrets.HUAWEI_SWR_USERNAME }} --password-stdin
 
       - name: Extract version from tag
         id: get_version
@@ -48,37 +59,85 @@ jobs:
           if [[ "$GITHUB_REF" =~ ^refs/tags/v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
             echo "VERSION=${BASH_REMATCH[1]}" >> $GITHUB_ENV
             echo "IS_VERSION=true" >> $GITHUB_ENV
+            echo "IMAGE_TAG=v${BASH_REMATCH[1]}" >> $GITHUB_ENV
           else
             echo "VERSION=latest" >> $GITHUB_ENV
             echo "IS_VERSION=false" >> $GITHUB_ENV
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
           fi
 
       # 构建 xiaozhi-server 镜像
-      - name: Build and push xiaozhi-server
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile-server
-          push: true
-          tags: |
-            ${{ env.IS_VERSION == 'true' && format('ghcr.io/{0}:server_{1},ghcr.io/{0}:server_latest', github.repository, env.VERSION) || format('ghcr.io/{0}:server_latest', github.repository) }}
-          platforms: linux/amd64,linux/arm64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            BUILDKIT_PROGRESS=plain
+      # - name: Build and push xiaozhi-server
+      #   uses: docker/build-push-action@v6
+      #   with:
+      #     context: .
+      #     file: Dockerfile-server
+      #     push: true
+      #     tags: |
+      #       ${{ env.IS_VERSION == 'true' && format('ghcr.io/{0}:server_{1},ghcr.io/{0}:server_latest', github.repository, env.VERSION) || format('ghcr.io/{0}:server_latest', github.repository) }}
+      #     platforms: linux/amd64,linux/arm64
+      #     cache-from: type=gha
+      #     cache-to: type=gha,mode=max
+      #     build-args: |
+      #       BUILDKIT_PROGRESS=plain
 
       # 构建 manager-api 镜像
-      - name: Build and push manager-web
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile-web
-          push: true
-          tags: |
-            ${{ env.IS_VERSION == 'true' && format('ghcr.io/{0}:web_{1},ghcr.io/{0}:web_latest', github.repository, env.VERSION) || format('ghcr.io/{0}:web_latest', github.repository) }}
-          platforms: linux/amd64,linux/arm64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            BUILDKIT_PROGRESS=plain
+      # - name: Build and push manager-web
+      #   uses: docker/build-push-action@v6
+      #   with:
+          # context: .
+          # file: Dockerfile-web
+          # push: true
+          # tags: |
+          #   ${{ env.IS_VERSION == 'true' && format('ghcr.io/{0}:web_{1},ghcr.io/{0}:web_latest', github.repository, env.VERSION) || format('ghcr.io/{0}:web_latest', github.repository) }}
+          # platforms: linux/amd64,linux/arm64
+          # cache-from: type=gha
+          # cache-to: type=gha,mode=max
+          # build-args: |
+          #   BUILDKIT_PROGRESS=plain
+      - name: Build xiaozhi-server
+        run: |
+          docker build -f Dockerfile-server -t ${{ env.SERVER_IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
+          docker build -f Dockerfile-server -t ${{ env.SERVER_IMAGE_NAME }}:latest .
+
+      # 标记 xiaozhi-server 镜像为华为云格式
+      - name: Tag xiaozhi-server
+        run: |
+          docker tag ${{ env.SERVER_IMAGE_NAME }}:${{ env.IMAGE_TAG }} ${{ env.HUAWEI_REGISTRY }}/${{ env.HUAWEI_NAMESPACE }}/${{ env.SERVER_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          docker tag ${{ env.SERVER_IMAGE_NAME }}:latest ${{ env.HUAWEI_REGISTRY }}/${{ env.HUAWEI_NAMESPACE }}/${{ env.SERVER_IMAGE_NAME }}:latest
+
+      # 推送 xiaozhi-server 镜像到华为云
+      - name: Push xiaozhi-server to Huawei Cloud
+        run: |
+          docker push ${{ env.HUAWEI_REGISTRY }}/${{ env.HUAWEI_NAMESPACE }}/${{ env.SERVER_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.HUAWEI_REGISTRY }}/${{ env.HUAWEI_NAMESPACE }}/${{ env.SERVER_IMAGE_NAME }}:latest
+
+      # 构建 xiaozhi-web 镜像
+      - name: Build xiaozhi-web
+        run: |
+          docker build -f Dockerfile-web -t ${{ env.WEB_IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
+          docker build -f Dockerfile-web -t ${{ env.WEB_IMAGE_NAME }}:latest .
+
+      # 标记 xiaozhi-web 镜像为华为云格式
+      - name: Tag xiaozhi-web
+        run: |
+          docker tag ${{ env.WEB_IMAGE_NAME }}:${{ env.IMAGE_TAG }} ${{ env.HUAWEI_REGISTRY }}/${{ env.HUAWEI_NAMESPACE }}/${{ env.WEB_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          docker tag ${{ env.WEB_IMAGE_NAME }}:latest ${{ env.HUAWEI_REGISTRY }}/${{ env.HUAWEI_NAMESPACE }}/${{ env.WEB_IMAGE_NAME }}:latest
+
+      # 推送 xiaozhi-web 镜像到华为云
+      - name: Push xiaozhi-web to Huawei Cloud
+        run: |
+          docker push ${{ env.HUAWEI_REGISTRY }}/${{ env.HUAWEI_NAMESPACE }}/${{ env.WEB_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.HUAWEI_REGISTRY }}/${{ env.HUAWEI_NAMESPACE }}/${{ env.WEB_IMAGE_NAME }}:latest
+
+      # 清理本地镜像
+      - name: Clean up local images
+        run: |
+          docker rmi ${{ env.SERVER_IMAGE_NAME }}:${{ env.IMAGE_TAG }} || true
+          docker rmi ${{ env.SERVER_IMAGE_NAME }}:latest || true
+          docker rmi ${{ env.WEB_IMAGE_NAME }}:${{ env.IMAGE_TAG }} || true
+          docker rmi ${{ env.WEB_IMAGE_NAME }}:latest || true
+          docker rmi ${{ env.HUAWEI_REGISTRY }}/${{ env.HUAWEI_NAMESPACE }}/${{ env.SERVER_IMAGE_NAME }}:${{ env.IMAGE_TAG }} || true
+          docker rmi ${{ env.HUAWEI_REGISTRY }}/${{ env.HUAWEI_NAMESPACE }}/${{ env.SERVER_IMAGE_NAME }}:latest || true
+          docker rmi ${{ env.HUAWEI_REGISTRY }}/${{ env.HUAWEI_NAMESPACE }}/${{ env.WEB_IMAGE_NAME }}:${{ env.IMAGE_TAG }} || true
+          docker rmi ${{ env.HUAWEI_REGISTRY }}/${{ env.HUAWEI_NAMESPACE }}/${{ env.WEB_IMAGE_NAME }}:latest || true

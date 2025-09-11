@@ -3,7 +3,8 @@ from aiohttp import web
 from config.logger import setup_logging
 from core.api.ota_handler import OTAHandler
 from core.api.vision_handler import VisionHandler
-
+from core.api.story_handler import StoryHandler
+from core.api.music_handler import MusicHandler
 TAG = __name__
 
 
@@ -13,7 +14,8 @@ class SimpleHttpServer:
         self.logger = setup_logging()
         self.ota_handler = OTAHandler(config)
         self.vision_handler = VisionHandler(config)
-
+        self.story_handler = StoryHandler(config, websocket_server)
+        self.music_handler = MusicHandler(config, websocket_server)
     def _get_websocket_url(self, local_ip: str, port: int) -> str:
         """获取websocket地址
 
@@ -56,6 +58,32 @@ class SimpleHttpServer:
                     web.get("/mcp/vision/explain", self.vision_handler.handle_get),
                     web.post("/mcp/vision/explain", self.vision_handler.handle_post),
                     web.options("/mcp/vision/explain", self.vision_handler.handle_post),
+
+                    # 添加故事播放API路由
+                    web.get("/xiaozhi/story/play", self.story_handler.handle_get),
+                    web.post("/xiaozhi/story/play", self.story_handler.handle_post),
+                    web.options("/xiaozhi/story/play", self.story_handler.handle_post),
+                    # 添加播放控制API路由
+                    web.post("/xiaozhi/story/stop", self.story_handler.handle_stop_playback),
+                    web.options("/xiaozhi/story/stop", self.story_handler.handle_stop_playback),
+                    web.post("/xiaozhi/story/pause", self.story_handler.handle_pause_playback),
+                    web.options("/xiaozhi/story/pause", self.story_handler.handle_pause_playback),
+                    web.post("/xiaozhi/story/resume", self.story_handler.handle_resume_playback),
+                    web.options("/xiaozhi/story/resume", self.story_handler.handle_resume_playback),
+                    # 添加播放状态查询API路由
+                    web.get("/xiaozhi/story/status", self.story_handler.handle_get_status),
+                    web.options("/xiaozhi/story/status", self.story_handler.handle_get_status),
+                    # 添加音乐控制API路由
+                    web.post("/xiaozhi/music/pause", self.music_handler.handle_pause_music),
+                    web.options("/xiaozhi/music/pause", self.music_handler.handle_pause_music),
+                    web.post("/xiaozhi/music/resume", self.music_handler.handle_resume_music),
+                    web.options("/xiaozhi/music/resume", self.music_handler.handle_resume_music),
+                    web.post("/xiaozhi/music/play", self.music_handler.handle_play_music),
+                    web.options("/xiaozhi/music/play", self.music_handler.handle_play_music),
+                    web.get("/xiaozhi/music/status", self.music_handler.handle_music_status),
+                    web.options("/xiaozhi/music/status", self.music_handler.handle_music_status),
+                    web.get("/xiaozhi/music/info", self.music_handler.handle_music_info),
+                    web.options("/xiaozhi/music/info", self.music_handler.handle_music_info),
                 ]
             )
 

@@ -23,10 +23,12 @@ import xiaozhi.common.redis.RedisUtils;
 import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.Result;
 import xiaozhi.modules.device.dto.DeviceRegisterDTO;
+import xiaozhi.modules.device.dto.DeviceResetDTO;
 import xiaozhi.modules.device.dto.DeviceUnBindDTO;
 import xiaozhi.modules.device.dto.DeviceUpdateDTO;
 import xiaozhi.modules.device.dto.DeviceManualAddDTO;
 import xiaozhi.modules.device.entity.DeviceEntity;
+import xiaozhi.modules.device.service.DeviceResetService;
 import xiaozhi.modules.device.service.DeviceService;
 import xiaozhi.modules.security.user.SecurityUser;
 
@@ -36,7 +38,7 @@ import xiaozhi.modules.security.user.SecurityUser;
 @RequestMapping("/device")
 public class DeviceController {
     private final DeviceService deviceService;
-
+    private final DeviceResetService deviceResetService;
     private final RedisUtils redisUtils;
 
     @PostMapping("/bind/{agentId}/{deviceCode}")
@@ -83,6 +85,22 @@ public class DeviceController {
         deviceService.unbindDevice(user.getId(), unDeviveBind.getDeviceId());
         return new Result<Void>();
     }
+    @PostMapping("/reset")
+    @Operation(summary = "设备恢复出厂设置")
+    @RequiresPermissions("sys:role:normal")
+    public Result<Void> resetDevice(@RequestBody @Valid DeviceResetDTO dto) {
+        deviceResetService.resetDevice(dto);
+        return new Result<>();
+    }
+
+    @PostMapping("/reset/validate")
+    @Operation(summary = "验证设备重置请求")
+    @RequiresPermissions("sys:role:normal")
+    public Result<String> validateReset(@RequestBody @Valid DeviceResetDTO dto) {
+        boolean isValid = deviceResetService.validateResetRequest(dto);
+        return new Result<String>().ok(isValid ? "验证通过，可以执行重置" : "验证失败");
+    }
+
 
     @PutMapping("/update/{id}")
     @Operation(summary = "更新设备信息")

@@ -14,3 +14,11 @@ class BaseHandler:
         )
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Allow-Origin"] = "*"
+
+    def _get_cors_headers(self):
+        """获取CORS头信息字典"""
+        return {
+            "Access-Control-Allow-Headers": "client-id, content-type, device-id",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Origin": "*"
+        }

@@ -160,8 +160,10 @@ def get_weather(conn, location: str = None, lang: str = "zh_CN"):
 
     api_host = conn.config["plugins"]["get_weather"].get(
         "api_host", "mj7p3y7naa.re.qweatherapi.com"
+        # "api_host", "C7H259EQUP.re.qweatherapi.com"
     )
     api_key = conn.config["plugins"]["get_weather"].get(
+        # "api_key", "aa5ec0859c144ac7b33966e25eef5580"
         "api_key", "a861d0d5e7bf4ee1a83d9a9e4f96d4da"
     )
     default_location = conn.config["plugins"]["get_weather"]["default_location"]
