@@ -168,4 +168,101 @@ public class AgentChatHistoryServiceImpl extends ServiceImpl<AiAgentChatHistoryD
                 .eq(AgentChatHistoryEntity::getAgentId, agentId));
         return row == 1;
     }
+
+    @Override
+    public List<AgentChatHistoryUserVO> getRecentlyFiftyByMacAddress(String macAddress) {
+        System.out.println("=== DEBUG: getRecentlyFiftyByMacAddress 开始查询，MAC地址: " + macAddress + " ===");
+        
+        // 先查询所有该MAC地址的记录（不加限制条件）
+        LambdaQueryWrapper<AgentChatHistoryEntity> allWrapper = new LambdaQueryWrapper<>();
+        allWrapper.eq(AgentChatHistoryEntity::getMacAddress, macAddress);
+        Long totalCount = this.baseMapper.selectCount(allWrapper);
+        System.out.println("=== DEBUG: MAC地址 " + macAddress + " 在聊天记录表中总共有 " + totalCount + " 条记录 ===");
+        
+        if (totalCount > 0) {
+            // 查询该MAC地址的记录详细信息（前5条用于调试）
+            allWrapper.last("LIMIT 5");
+            List<AgentChatHistoryEntity> debugRecords = this.baseMapper.selectList(allWrapper);
+            for (AgentChatHistoryEntity record : debugRecords) {
+                System.out.println("=== DEBUG: 记录详情 - ID:" + record.getId() + 
+                    ", ChatType:" + record.getChatType() + 
+                    ", AudioId:" + record.getAudioId() + 
+                    ", Content:" + (record.getContent() != null ? record.getContent().substring(0, Math.min(50, record.getContent().length())) + "..." : "null") + " ===");
+            }
+        }
+        
+        // 查询USER类型的记录数量
+        LambdaQueryWrapper<AgentChatHistoryEntity> userWrapper = new LambdaQueryWrapper<>();
+        userWrapper.eq(AgentChatHistoryEntity::getMacAddress, macAddress)
+                   .eq(AgentChatHistoryEntity::getChatType, AgentChatHistoryType.USER.getValue());
+        Long userCount = this.baseMapper.selectCount(userWrapper);
+        System.out.println("=== DEBUG: MAC地址 " + macAddress + " 的USER类型记录有 " + userCount + " 条 ===");
+        
+        // 查询有AudioId的USER类型记录数量  
+        LambdaQueryWrapper<AgentChatHistoryEntity> userWithAudioWrapper = new LambdaQueryWrapper<>();
+        userWithAudioWrapper.eq(AgentChatHistoryEntity::getMacAddress, macAddress)
+                           .eq(AgentChatHistoryEntity::getChatType, AgentChatHistoryType.USER.getValue())
+                           .isNotNull(AgentChatHistoryEntity::getAudioId);
+        Long userWithAudioCount = this.baseMapper.selectCount(userWithAudioWrapper);
+        System.out.println("=== DEBUG: MAC地址 " + macAddress + " 的USER类型且有AudioId的记录有 " + userWithAudioCount + " 条 ===");
+        
+        // 如果有AudioId的USER记录数为0，尝试不要求AudioId的查询
+        LambdaQueryWrapper<AgentChatHistoryEntity> wrapper = new LambdaQueryWrapper<>();
+        if (userWithAudioCount > 0) {
+            // 有音频的查询（原逻辑）
+            wrapper.select(AgentChatHistoryEntity::getContent, AgentChatHistoryEntity::getAudioId)
+                    .eq(AgentChatHistoryEntity::getMacAddress, macAddress)
+                    .eq(AgentChatHistoryEntity::getChatType, AgentChatHistoryType.USER.getValue())
+                    .isNotNull(AgentChatHistoryEntity::getAudioId)
+                    .orderByDesc(AgentChatHistoryEntity::getId);
+            System.out.println("=== DEBUG: 使用有音频的查询条件 ===");
+        } else {
+            // 放宽条件，不要求AudioId（只要是用户消息即可）
+            wrapper.select(AgentChatHistoryEntity::getContent, AgentChatHistoryEntity::getAudioId)
+                    .eq(AgentChatHistoryEntity::getMacAddress, macAddress)
+                    .eq(AgentChatHistoryEntity::getChatType, AgentChatHistoryType.USER.getValue())
+                    .orderByDesc(AgentChatHistoryEntity::getId);
+            System.out.println("=== DEBUG: 使用放宽的查询条件（不要求AudioId） ===");
+        }
+        
+        // 构建分页查询，查询前50页数据
+        Page<AgentChatHistoryEntity> pageParam = new Page<>(0, 50);
+        IPage<AgentChatHistoryEntity> result = this.baseMapper.selectPage(pageParam, wrapper);
+        
+        System.out.println("=== DEBUG: 最终查询结果数量: " + result.getRecords().size() + " ===");
+        
+        return result.getRecords().stream().map(item -> {
+            AgentChatHistoryUserVO vo = ConvertUtils.sourceToTarget(item, AgentChatHistoryUserVO.class);
+            // 处理 content 字段，确保只返回聊天内容
+            if (vo != null && vo.getContent() != null) {
+                vo.setContent(extractContentFromString(vo.getContent()));
+            }
+            return vo;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AgentChatHistoryDTO> getRecentlyFiftyFullChatByMacAddress(String macAddress) {
+        System.out.println("=== DEBUG: getRecentlyFiftyFullChatByMacAddress 开始查询，MAC地址: " + macAddress + " ===");
+        
+        // 查询所有类型的聊天记录（用户和智能体）
+        LambdaQueryWrapper<AgentChatHistoryEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AgentChatHistoryEntity::getMacAddress, macAddress)
+               .orderByAsc(AgentChatHistoryEntity::getId); // 按时间正序排列，保持对话顺序
+        
+        // 构建分页查询，查询最近50条记录
+        Page<AgentChatHistoryEntity> pageParam = new Page<>(1, 50);
+        IPage<AgentChatHistoryEntity> result = this.baseMapper.selectPage(pageParam, wrapper);
+        
+        System.out.println("=== DEBUG: 完整聊天记录查询结果数量: " + result.getRecords().size() + " ===");
+        
+        return result.getRecords().stream().map(item -> {
+            AgentChatHistoryDTO dto = ConvertUtils.sourceToTarget(item, AgentChatHistoryDTO.class);
+            // 处理 content 字段，确保只返回聊天内容
+            if (dto != null && dto.getContent() != null) {
+                dto.setContent(extractContentFromString(dto.getContent()));
+            }
+            return dto;
+        }).collect(Collectors.toList());
+    }
 }

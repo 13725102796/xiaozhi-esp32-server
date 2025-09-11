@@ -266,6 +266,10 @@ public class DeviceResetServiceImpl implements DeviceResetService {
         Long userId = user != null ? user.getId() : null;
 
 
+
+
+
+
         // 获取指定智能体的所有声纹记录
         List<AgentVoicePrintVO> voicePrints = agentVoicePrintService.list(userId, agentId);
         

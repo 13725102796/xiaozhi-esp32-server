@@ -71,4 +71,20 @@ public interface AgentChatHistoryService extends IService<AgentChatHistoryEntity
      * @return T：属于 F：不属于
      */
     boolean isAudioOwnedByAgent(String audioId,String agentId);
+
+    /**
+     * 根据MAC地址获取最近50条用户的聊天记录数据（带音频数据）
+     *
+     * @param macAddress MAC地址
+     * @return 聊天记录列表（只有用户）
+     */
+    List<AgentChatHistoryUserVO> getRecentlyFiftyByMacAddress(String macAddress);
+
+    /**
+     * 根据MAC地址获取最近50条完整聊天记录数据（用户+智能体）
+     *
+     * @param macAddress MAC地址
+     * @return 聊天记录列表（用户和智能体消息）
+     */
+    List<AgentChatHistoryDTO> getRecentlyFiftyFullChatByMacAddress(String macAddress);
 }

@@ -243,4 +243,79 @@ public class AgentController {
                 .body(audioData);
     }
 
+    @GetMapping("/mac-address/{macAddress}/sessions")
+    @Operation(summary = "根据MAC地址获取设备会话列表")
+    public Result<PageData<AgentChatSessionDTO>> getSessionsByMacAddress(
+            @PathVariable("macAddress") String macAddress,
+            @Parameter(hidden = true) @RequestParam Map<String, Object> params) {
+        DeviceEntity device = deviceService.getDeviceByMacAddress(macAddress);
+        if (device == null) {
+            return new Result<PageData<AgentChatSessionDTO>>().error("设备不存在");
+        }
+        
+        if (StringUtils.isBlank(device.getAgentId())) {
+            return new Result<PageData<AgentChatSessionDTO>>().error("设备未绑定智能体");
+        }
+        
+        params.put("agentId", device.getAgentId());
+        PageData<AgentChatSessionDTO> page = agentChatHistoryService.getSessionListByAgentId(params);
+        return new Result<PageData<AgentChatSessionDTO>>().ok(page);
+    }
+
+    @GetMapping("/mac-address/{macAddress}/chat-history")
+    @Operation(summary = "根据MAC地址获取设备最近聊天记录")
+    public Result<List<AgentChatHistoryUserVO>> getChatHistoryByMacAddress(
+            @PathVariable("macAddress") String macAddress) {
+        
+        // 方法1：直接通过MAC地址查询聊天记录（推荐方式）
+        List<AgentChatHistoryUserVO> data = agentChatHistoryService.getRecentlyFiftyByMacAddress(macAddress);
+        
+        if (data != null && !data.isEmpty()) {
+            return new Result<List<AgentChatHistoryUserVO>>().ok(data);
+        }
+        
+        // 方法2：通过设备查询（兼容性备用方案）
+        DeviceEntity device = deviceService.getDeviceByMacAddress(macAddress);
+        
+        if (device == null) {
+            return new Result<List<AgentChatHistoryUserVO>>().error("设备不存在，且聊天记录中也未找到该MAC地址的数据");
+        }
+        
+        if (StringUtils.isBlank(device.getAgentId())) {
+            return new Result<List<AgentChatHistoryUserVO>>().error("设备未绑定智能体");
+        }
+        
+        List<AgentChatHistoryUserVO> agentData = agentChatHistoryService.getRecentlyFiftyByAgentId(device.getAgentId());
+        
+        return new Result<List<AgentChatHistoryUserVO>>().ok(agentData);
+    }
+
+    @GetMapping("/mac-address/{macAddress}/chat-history/full")
+    @Operation(summary = "根据MAC地址获取设备完整聊天记录（用户+智能体）")
+    public Result<List<AgentChatHistoryDTO>> getFullChatHistoryByMacAddress(
+            @PathVariable("macAddress") String macAddress) {
+        
+        List<AgentChatHistoryDTO> data = agentChatHistoryService.getRecentlyFiftyFullChatByMacAddress(macAddress);
+        
+        return new Result<List<AgentChatHistoryDTO>>().ok(data);
+    }
+
+    @GetMapping("/mac-address/{macAddress}/chat-history/{sessionId}")
+    @Operation(summary = "根据MAC地址获取指定会话的聊天记录")
+    public Result<List<AgentChatHistoryDTO>> getChatHistoryByMacAddressAndSession(
+            @PathVariable("macAddress") String macAddress,
+            @PathVariable("sessionId") String sessionId) {
+        DeviceEntity device = deviceService.getDeviceByMacAddress(macAddress);
+        if (device == null) {
+            return new Result<List<AgentChatHistoryDTO>>().error("设备不存在");
+        }
+        
+        if (StringUtils.isBlank(device.getAgentId())) {
+            return new Result<List<AgentChatHistoryDTO>>().error("设备未绑定智能体");
+        }
+        
+        List<AgentChatHistoryDTO> result = agentChatHistoryService.getChatHistoryBySessionId(device.getAgentId(), sessionId);
+        return new Result<List<AgentChatHistoryDTO>>().ok(result);
+    }
+
 }
