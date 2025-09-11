@@ -24,11 +24,24 @@ class MusicHandler(BaseHandler):
     def _find_connection_by_device_id(self, device_id: str):
         """根据设备ID查找对应的WebSocket连接"""
         if not self.websocket_server or not hasattr(self.websocket_server, 'active_connections'):
+            self.logger.bind(tag=TAG).warning("WebSocket服务器或active_connections不存在")
             return None
+        
+        # 记录当前所有活跃连接的device_id（用于调试）
+        active_device_ids = []
+        for conn in self.websocket_server.active_connections:
+            conn_device_id = getattr(conn, 'device_id', None)
+            active_device_ids.append(conn_device_id)
+        
+        self.logger.bind(tag=TAG).info(f"查找设备ID: {device_id}, 活跃连接数: {len(self.websocket_server.active_connections)}")
+        self.logger.bind(tag=TAG).debug(f"当前活跃的device_id列表: {active_device_ids}")
         
         for conn in self.websocket_server.active_connections:
             if hasattr(conn, 'device_id') and conn.device_id == device_id:
+                self.logger.bind(tag=TAG).info(f"找到匹配的连接: device_id={conn.device_id}")
                 return conn
+        
+        self.logger.bind(tag=TAG).warning(f"未找到设备ID为 {device_id} 的连接")
         return None
 
     async def handle_pause_music(self, request):
