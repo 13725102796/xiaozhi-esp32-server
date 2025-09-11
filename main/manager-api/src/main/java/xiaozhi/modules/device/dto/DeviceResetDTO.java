@@ -1,4 +1,3 @@
-@ -0,0 +1,42 @@
 package xiaozhi.modules.device.dto;
 
 import java.io.Serializable;

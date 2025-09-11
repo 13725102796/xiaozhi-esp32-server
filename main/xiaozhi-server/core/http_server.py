@@ -9,7 +9,7 @@ TAG = __name__
 
 
 class SimpleHttpServer:
-    def __init__(self, config: dict):
+    def __init__(self, config: dict,websocket_server=None):
         self.config = config
         self.logger = setup_logging()
         self.ota_handler = OTAHandler(config)

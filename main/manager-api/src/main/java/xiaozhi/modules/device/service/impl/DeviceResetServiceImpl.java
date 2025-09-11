@@ -1,4 +1,3 @@
-@ -0,0 +1,355 @@
 package xiaozhi.modules.device.service.impl;
 
 import java.util.ArrayList;
@@ -11,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,11 +20,11 @@ import xiaozhi.common.user.UserDetail;
 import xiaozhi.modules.agent.entity.AgentChatAudioEntity;
 import xiaozhi.modules.agent.entity.AgentChatHistoryEntity;
 import xiaozhi.modules.agent.entity.AgentEntity;
-import xiaozhi.modules.agent.entity.AgentVoicePrintEntity;
 import xiaozhi.modules.agent.service.AgentChatAudioService;
 import xiaozhi.modules.agent.service.AgentChatHistoryService;
 import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.agent.service.AgentVoicePrintService;
+import xiaozhi.modules.agent.vo.AgentVoicePrintVO;
 import xiaozhi.modules.device.dto.DeviceResetDTO;
 import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.device.service.DeviceResetService;
@@ -263,29 +261,43 @@ public class DeviceResetServiceImpl implements DeviceResetService {
     public int clearVoiceprint(String agentId) {
         log.info("开始清空声纹信息: 智能体ID {}", agentId);
         
-        QueryWrapper<AgentVoicePrintEntity> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("agent_id", agentId);
+        // 获取当前用户ID
+        UserDetail user = SecurityUser.getUser();
+        Long userId = user != null ? user.getId() : null;
+
+
+        // 获取指定智能体的所有声纹记录
+        List<AgentVoicePrintVO> voicePrints = agentVoicePrintService.list(userId, agentId);
         
-        // 先获取要删除的记录数量
-        long count = agentVoicePrintService.count(queryWrapper);
+        int count = 0;
+        for (AgentVoicePrintVO voicePrint : voicePrints) {
+            // 使用现有的删除方法
+            boolean deleted = agentVoicePrintService.delete(userId, voicePrint.getId());
+            if (deleted) {
+                count++;
+            }
+        }
         
-        // 执行删除
-        boolean result = agentVoicePrintService.remove(queryWrapper);
-        
-        log.info("声纹信息清空完成: 删除了 {} 条记录, 删除结果: {}", count, result);
-        return (int) count;
+        log.info("声纹信息清空完成: 删除了 {} 条记录", count);
+        return count;
     }
 
     @Override
     public boolean resetAgentMemory(String agentId) {
         log.info("开始重置智能体记忆: 智能体ID {}", agentId);
         
-        UpdateWrapper<AgentEntity> updateWrapper = new UpdateWrapper<>();
-        updateWrapper.eq("id", agentId)
-                     .set("summary_memory", null)
-                     .set("updated_at", new Date());
+        // 获取智能体实体
+        AgentEntity agent = agentService.selectById(agentId);
+        if (agent == null) {
+            log.warn("智能体不存在: {}", agentId);
+            return false;
+        }
         
-        boolean result = agentService.update(updateWrapper);
+        // 重置记忆字段
+        agent.setSummaryMemory(null);
+        agent.setUpdatedAt(new Date());
+        
+        boolean result = agentService.updateById(agent);
         
         log.info("智能体记忆重置完成: 重置结果 {}", result);
         return result;
@@ -296,8 +308,9 @@ public class DeviceResetServiceImpl implements DeviceResetService {
         log.info("清理重置相关缓存");
         
         try {
-            // 1. 清理设备配置缓存
-            redisUtils.delete(RedisKeys.getDeviceConfigKey(device.getMacAddress()));
+            // 1. 清理设备相关缓存
+            String deviceKey = "device:config:" + device.getMacAddress();
+            redisUtils.delete(deviceKey);
             
             // 2. 清理智能体配置缓存
             String agentConfigKey = "agent:config:" + agent.getId();
