@@ -270,6 +270,7 @@ public class DeviceResetServiceImpl implements DeviceResetService {
 
 
 
+
         // 获取指定智能体的所有声纹记录
         List<AgentVoicePrintVO> voicePrints = agentVoicePrintService.list(userId, agentId);
         
@@ -280,6 +281,10 @@ public class DeviceResetServiceImpl implements DeviceResetService {
             if (deleted) {
                 count++;
             }
+
+
+
+
         }
         
         log.info("声纹信息清空完成: 删除了 {} 条记录", count);

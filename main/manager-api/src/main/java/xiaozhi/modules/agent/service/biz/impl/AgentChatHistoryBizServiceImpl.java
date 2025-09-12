@@ -123,4 +123,33 @@ public class AgentChatHistoryBizServiceImpl implements AgentChatHistoryBizServic
 
         log.info("设备 {} 对应智能体 {} 上报成功", macAddress, agentId);
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean replaceMacAddress(String macAddress, String newMacAddress) {
+        log.info("开始替换MAC地址: 原MAC={}, 新MAC={}", macAddress, newMacAddress);
+        
+        // 参数校验（只验证非空，不验证格式）
+        if (macAddress == null || macAddress.trim().isEmpty() || 
+            newMacAddress == null || newMacAddress.trim().isEmpty()) {
+            log.error("MAC地址参数不能为空");
+            return Boolean.FALSE;
+        }
+        
+        if (macAddress.equals(newMacAddress)) {
+            log.warn("原MAC地址和新MAC地址相同，无需替换");
+            return Boolean.TRUE;
+        }
+        
+        try {
+            // 执行替换操作（支持任意格式的MAC地址，包括前缀ID）
+            int affectedRows = agentChatHistoryService.replaceMacAddress(macAddress, newMacAddress);
+            
+            log.info("MAC地址替换完成: 原MAC={}, 新MAC={}, 影响记录数={}", macAddress, newMacAddress, affectedRows);
+            return Boolean.TRUE;
+        } catch (Exception e) {
+            log.error("替换MAC地址时发生错误: 原MAC={}, 新MAC={}", macAddress, newMacAddress, e);
+            throw e;
+        }
+    }
 }

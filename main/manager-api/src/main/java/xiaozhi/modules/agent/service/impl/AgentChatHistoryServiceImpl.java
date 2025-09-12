@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -264,5 +265,17 @@ public class AgentChatHistoryServiceImpl extends ServiceImpl<AiAgentChatHistoryD
             }
             return dto;
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int replaceMacAddress(String macAddress, String newMacAddress) {
+        // 使用LambdaUpdateWrapper进行更新操作
+        LambdaUpdateWrapper<AgentChatHistoryEntity> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(AgentChatHistoryEntity::getMacAddress, macAddress)
+                    .set(AgentChatHistoryEntity::getMacAddress, newMacAddress);
+        
+        // 执行更新操作
+        return this.baseMapper.update(null, updateWrapper);
     }
 }

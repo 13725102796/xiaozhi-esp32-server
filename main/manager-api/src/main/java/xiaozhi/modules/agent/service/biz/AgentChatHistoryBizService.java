@@ -19,4 +19,13 @@ public interface AgentChatHistoryBizService {
      * @return 上传结果，true表示成功，false表示失败
      */
     Boolean report(AgentChatHistoryReportDTO agentChatHistoryReportDTO);
+
+    /**
+     * 替换聊天记录中的MAC地址
+     *
+     * @param macAddress 原MAC地址
+     * @param newMacAddress 新MAC地址
+     * @return 替换结果，true表示成功，false表示失败
+     */
+    Boolean replaceMacAddress(String macAddress, String newMacAddress);
 }

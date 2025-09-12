@@ -87,4 +87,13 @@ public interface AgentChatHistoryService extends IService<AgentChatHistoryEntity
      * @return 聊天记录列表（用户和智能体消息）
      */
     List<AgentChatHistoryDTO> getRecentlyFiftyFullChatByMacAddress(String macAddress);
+
+    /**
+     * 替换聊天记录中的MAC地址
+     *
+     * @param macAddress 原MAC地址
+     * @param newMacAddress 新MAC地址
+     * @return 影响的记录数
+     */
+    int replaceMacAddress(String macAddress, String newMacAddress);
 }
