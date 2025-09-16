@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
 env:
   # 华为云容器镜像服务配置
-  HUAWEI_REGISTRY: swr.cn-north-4.myhuaweicloud.com
-  HUAWEI_NAMESPACE: fengye
+  HUAWEI_REGISTRY: swr.cn-south-1.myhuaweicloud.com
+  HUAWEI_NAMESPACE: airhub
   SERVER_IMAGE_NAME: xiaozhi-server
   WEB_IMAGE_NAME: xiaozhi-web
 
