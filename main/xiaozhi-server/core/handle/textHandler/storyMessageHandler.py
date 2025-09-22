@@ -1,9 +1,11 @@
 import json
+import random
 from typing import Dict, Any
 
 from core.handle.textMessageHandler import TextMessageHandler
 from core.handle.textMessageType import TextMessageType
 from core.api.story_handler import StoryHandler
+from config.manage_api_client import get_device_stories
 
 TAG = __name__
 
@@ -36,9 +38,48 @@ class StoryTextMessageHandler(TextMessageHandler):
                 return
 
             # 获取故事相关参数
-            story_name = "侦探与龙：宝石的秘密"
-            audio_url = "https://toy-storage.airlabs.art/audio/volcano_tts/permanent/20250904/story_7369183431743246336_cfd71314.mp3"
-            story_title = "侦探与龙：宝石的秘密"
+            # 默认故事信息（作为兜底）
+            default_story_name = "侦探与龙：宝石的秘密"
+            default_audio_url = "https://toy-storage.airlabs.art/audio/volcano_tts/permanent/20250904/story_7369183431743246336_cfd71314.mp3"
+            default_story_title = "侦探与龙：宝石的秘密"
+
+            # 调用API获取设备故事信息
+            conn.logger.bind(tag=TAG).info(f"开始调用API获取设备故事，device_id: {device_id}")
+            stories_data = get_device_stories(device_id)
+            conn.logger.bind(tag=TAG).info(f"API返回的stories_data: {stories_data}")
+
+            story_name = default_story_name
+            audio_url = default_audio_url
+            story_title = default_story_title
+
+            if stories_data:
+                # 从API响应中提取故事信息
+                story_info = None
+
+                # 检查API返回格式：{"success": true, "data": {"stories": [...]}}
+                if isinstance(stories_data, dict) and stories_data.get("success") and "data" in stories_data:
+                    story_list = stories_data["data"].get("stories", [])
+                    if len(story_list) > 0:
+                        # 随机选择一个故事
+                        story_info = random.choice(story_list)
+                        conn.logger.bind(tag=TAG).info(f"从API获取到{len(story_list)}个故事，随机选择其中一个")
+                # 兼容其他格式
+                elif isinstance(stories_data, list) and len(stories_data) > 0:
+                    story_info = random.choice(stories_data)
+                elif isinstance(stories_data, dict) and 'stories' in stories_data:
+                    story_list = stories_data['stories']
+                    if len(story_list) > 0:
+                        story_info = random.choice(story_list)
+
+                if story_info:
+                    story_name = story_info.get("title", default_story_name)
+                    audio_url = story_info.get("audio_url", default_audio_url)
+                    story_title = story_info.get("title", default_story_title)
+                    conn.logger.bind(tag=TAG).info(f"使用API随机选择的故事: {story_title}")
+                else:
+                    conn.logger.bind(tag=TAG).warning("API返回数据格式不正确，使用默认故事信息")
+            else:
+                conn.logger.bind(tag=TAG).warning("无法获取设备故事信息，使用默认故事信息")
             
             # 获取WebSocket服务器实例
             websocket_server = getattr(conn, 'server', None)

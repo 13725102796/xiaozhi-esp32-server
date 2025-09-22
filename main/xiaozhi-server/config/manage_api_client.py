@@ -33,6 +33,7 @@ class ManageApiClient:
     @classmethod
     def _init_client(cls, config):
         """初始化持久化连接池"""
+        cls.full_config = config  # 保存完整配置
         cls.config = config.get("manager-api")
 
         if not cls.config:
@@ -182,6 +183,44 @@ def report(
         )
     except Exception as e:
         print(f"TTS上报失败: {e}")
+        return None
+
+
+def get_device_stories(mac_address: str) -> Optional[Dict]:
+    """获取设备故事列表"""
+    try:
+        if not ManageApiClient._instance:
+            return None
+
+        # 获取stories-api配置
+        stories_config = ManageApiClient._instance.full_config.get("stories-api")
+        if not stories_config:
+            # fallback到manager-api
+            base_url = ManageApiClient._instance._client.base_url
+            endpoint = "/api/v1/public/device/stories/"
+            use_auth = True
+        else:
+            base_url = stories_config.get("url", "http://localhost:9001")
+            endpoint = "/api/v1/public/device/stories/"
+            # stories-api可能不需要认证
+            use_auth = "token" in stories_config
+
+        if use_auth:
+            # 使用现有的ManageApiClient
+            result = ManageApiClient._instance._execute_request(
+                "GET",
+                f"/api/v1/public/device/stories/?mac_address={mac_address}"
+            )
+        else:
+            # 直接发送HTTP请求，不使用认证
+            import httpx
+            with httpx.Client() as client:
+                response = client.get(f"{base_url}{endpoint}?mac_address={mac_address}")
+                response.raise_for_status()
+                result = response.json()
+
+        return result
+    except Exception as e:
         return None
 
 
