@@ -80,22 +80,26 @@ def play_story(conn, story_name: str):
 def initialize_story_config(conn):
     global STORY_CONFIG
     if not STORY_CONFIG:
+        # 获取基础API URL
+        base_url = conn.config.get("api", {}).get("base_url", "https://qy-toy.airlabs.art")
+        default_story_url = f"{base_url}/api/v1/public/random-story-audio/"
+
         if "play_story" in conn.config["plugins"]:
             STORY_CONFIG["remote_api_url"] = conn.config["plugins"]["play_story"].get(
-                "remote_api_url", "https://qy-toy.airlabs.art/api/v1/public/random-story-audio/"
+                "remote_api_url", default_story_url
             )
             STORY_CONFIG["enable_remote_story"] = conn.config["plugins"]["play_story"].get(
                 "enable_remote_story", True
             )
         else:
             # 默认远程故事API配置
-            STORY_CONFIG["remote_api_url"] = "https://qy-toy.airlabs.art/api/v1/public/random-story-audio/"
+            STORY_CONFIG["remote_api_url"] = default_story_url
             STORY_CONFIG["enable_remote_story"] = True
-        
+
         # 输出日志，便于调试
         conn.logger.bind(tag=TAG).info(f"远程故事API设置为: {STORY_CONFIG['remote_api_url']}")
         conn.logger.bind(tag=TAG).info(f"远程故事功能: {'启用' if STORY_CONFIG['enable_remote_story'] else '禁用'}")
-    
+
     return STORY_CONFIG
 
 

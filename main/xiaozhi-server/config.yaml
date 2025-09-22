@@ -27,6 +27,14 @@ server:
   vision_explain: http://你的ip或者域名:端口号/mcp/vision/explain
   # OTA返回信息时区偏移量
   timezone_offset: +8
+
+# 外部API配置
+api:
+  # 远程服务基础URL
+  # 本地开发: http://192.168.124.24:9001
+  # 生产环境: https://qy-toy.airlabs.art
+  base_url: "http://192.168.124.24:9001"
+
   # 认证配置
   auth:
     # 是否启用认证
@@ -147,6 +155,9 @@ plugins:
       - ".wav"
       - ".p3"
     refresh_time: 300 # 刷新音乐列表的时间间隔，单位为秒
+  play_white_noise:
+    # remote_api_url: 如果不设置，将自动使用 api.base_url + "/api/v1/public/white-noise/random/"
+    enable_remote_white_noise: true  # 是否启用远程白噪音功能
 
 # 声纹识别配置
 voiceprint:
@@ -227,6 +238,7 @@ Intent:
       - get_weather
       - get_news_from_newsnow
       - play_music
+      - play_white_noise
   function_call:
     # 不需要动type
     type: function_call
@@ -241,6 +253,7 @@ Intent:
       # play_music是服务器自带的音乐播放，hass_play_music是通过home assistant控制的独立外部程序音乐播放
       # 如果用了hass_play_music，就不要开启play_music，两者只留一个
       - play_music
+      - play_white_noise
       #- hass_get_state
       #- hass_set_state
       #- hass_play_music
