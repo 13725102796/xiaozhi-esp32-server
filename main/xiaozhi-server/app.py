@@ -2,8 +2,9 @@ import sys
 import uuid
 import signal
 import asyncio
+import argparse
 from aioconsole import ainput
-from config.settings import load_config
+from config.settings import load_config, set_local_config_path
 from config.logger import setup_logging
 from core.utils.util import get_local_ip, validate_mcp_endpoint
 from core.http_server import SimpleHttpServer
@@ -44,7 +45,8 @@ async def monitor_stdin():
 
 async def main():
     check_ffmpeg_installed()
-    config = load_config()
+    from config.settings import _local_config_path
+    config = load_config(_local_config_path)
 
     # 默认使用manager-api的secret作为auth_key
     # 如果secret为空，则生成随机密钥
@@ -132,6 +134,16 @@ async def main():
 
 
 if __name__ == "__main__":
+    # 解析命令行参数
+    parser = argparse.ArgumentParser(description='小智ESP32服务器')
+    parser.add_argument('--local-config', type=str, help='指定本地配置文件路径，如: --local-config config-local.yaml')
+    args = parser.parse_args()
+
+    # 如果指定了本地配置文件，设置全局变量
+    if args.local_config:
+        set_local_config_path(args.local_config)
+        print(f"使用本地配置文件: {args.local_config}")
+
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

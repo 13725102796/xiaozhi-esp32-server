@@ -15,21 +15,32 @@ def read_config(config_path):
     return config
 
 
-def load_config():
+def load_config(local_config_path=None):
     """加载配置文件"""
     from core.utils.cache.manager import cache_manager, CacheType
 
     # 检查缓存
-    cached_config = cache_manager.get(CacheType.CONFIG, "main_config")
+    cache_key = f"main_config_{local_config_path or 'default'}"
+    cached_config = cache_manager.get(CacheType.CONFIG, cache_key)
     if cached_config is not None:
         return cached_config
 
     default_config_path = get_project_dir() + "config.yaml"
-    custom_config_path = get_project_dir() + "data/.config.yaml"
+
+    # 如果指定了本地配置文件，优先使用
+    if local_config_path:
+        custom_config_path = get_project_dir() + local_config_path
+    else:
+        custom_config_path = get_project_dir() + "data/.config.yaml"
 
     # 加载默认配置
     default_config = read_config(default_config_path)
-    custom_config = read_config(custom_config_path)
+
+    # 检查自定义配置文件是否存在
+    if os.path.exists(custom_config_path):
+        custom_config = read_config(custom_config_path)
+    else:
+        custom_config = {}
 
     if custom_config.get("manager-api", {}).get("url"):
         config = get_config_from_api(custom_config)
@@ -40,7 +51,7 @@ def load_config():
     ensure_directories(config)
 
     # 缓存配置
-    cache_manager.set(CacheType.CONFIG, "main_config", config)
+    cache_manager.set(CacheType.CONFIG, cache_key, config)
     return config
 
 

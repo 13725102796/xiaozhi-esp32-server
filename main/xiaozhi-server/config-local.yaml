@@ -29,23 +29,23 @@ server:
   timezone_offset: +8
 
 # 外部API配置
-api:
-  # 远程服务基础URL
-  # 本地开发: http://192.168.124.24:9001
-  # 生产环境: https://qy-toy.airlabs.art
-  base_url: "https://qy-toy.airlabs.art"
+# api:
+#   # 远程服务基础URL
+#   # 本地开发: http://192.168.124.24:9001
+#   # 生产环境: https://qy-toy.airlabs.art
+#   base_url: "https://qy-toy.airlabs.art"
 
-  # 认证配置
-  auth:
-    # 是否启用认证
-    enabled: false
-    # 设备的token，可以在编译固件的环节，写入你自己定义的token
-    # 固件上的token和以下的token如果能对应，才能连接本服务端
-    tokens:
-      - token: "your-token1" # 设备1的token
-        name: "your-device-name1"  # 设备1标识
-      - token: "your-token2"  # 设备2的token
-        name: "your-device-name2" # 设备2标识
+#   # 认证配置
+#   auth:
+#     # 是否启用认证
+#     enabled: false
+#     # 设备的token，可以在编译固件的环节，写入你自己定义的token
+#     # 固件上的token和以下的token如果能对应，才能连接本服务端
+#     tokens:
+#       - token: "your-token1" # 设备1的token
+#         name: "your-device-name1"  # 设备1标识
+#       - token: "your-token2"  # 设备2的token
+#         name: "your-device-name2" # 设备2标识
     # 可选:设备白名单，如果设置了白名单，那么白名单的机器无论是什么token都可以连接。
     #allowed_devices:
     #  - "24:0A:C4:1D:3B:F0"  # MAC地址列表
@@ -941,3 +941,13 @@ TTS:
     # 默认音色，如需其他音色可到项目assets文件夹下注册
     voice: "jay_klee"
     output_dir: tmp/
+
+# 本地开发配置文件
+# 定义本地API地址
+local_api: &local_api "http://192.168.124.24:9001"
+
+api:
+  base_url: *local_api
+
+stories-api:
+  url: *local_api

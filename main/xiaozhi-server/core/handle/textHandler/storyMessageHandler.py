@@ -56,13 +56,20 @@ class StoryTextMessageHandler(TextMessageHandler):
                 # 从API响应中提取故事信息
                 story_info = None
 
-                # 检查API返回格式：{"success": true, "data": {"stories": [...]}}
+                # 检查API返回格式：{"success": true, "data": {"title": "...", "audio_url": "..."}}
                 if isinstance(stories_data, dict) and stories_data.get("success") and "data" in stories_data:
-                    story_list = stories_data["data"].get("stories", [])
-                    if len(story_list) > 0:
-                        # 随机选择一个故事
-                        story_info = random.choice(story_list)
-                        conn.logger.bind(tag=TAG).info(f"从API获取到{len(story_list)}个故事，随机选择其中一个")
+                    data = stories_data["data"]
+                    # 新格式：data直接包含故事信息
+                    if isinstance(data, dict) and "title" in data and "audio_url" in data:
+                        story_info = data
+                        conn.logger.bind(tag=TAG).info(f"从API获取到直接故事数据: {story_info.get('title')}")
+                    # 原格式：data包含stories数组
+                    else:
+                        story_list = data.get("stories", [])
+                        if len(story_list) > 0:
+                            # 随机选择一个故事
+                            story_info = random.choice(story_list)
+                            conn.logger.bind(tag=TAG).info(f"从API获取到{len(story_list)}个故事，随机选择其中一个")
                 # 兼容其他格式
                 elif isinstance(stories_data, list) and len(stories_data) > 0:
                     story_info = random.choice(stories_data)
@@ -75,7 +82,7 @@ class StoryTextMessageHandler(TextMessageHandler):
                     story_name = story_info.get("title", default_story_name)
                     audio_url = story_info.get("audio_url", default_audio_url)
                     story_title = story_info.get("title", default_story_title)
-                    conn.logger.bind(tag=TAG).info(f"使用API随机选择的故事: {story_title}")
+                    conn.logger.bind(tag=TAG).info(f"使用API获取的故事: {story_title}")
                 else:
                     conn.logger.bind(tag=TAG).warning("API返回数据格式不正确，使用默认故事信息")
             else:

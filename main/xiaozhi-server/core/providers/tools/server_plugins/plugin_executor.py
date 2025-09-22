@@ -52,14 +52,11 @@ class ServerPluginExecutor(ToolExecutor):
 
         # 获取必要的函数
         necessary_functions = ["handle_exit_intent", "get_lunar"]
-        print(f"===== 必要函数: {necessary_functions} =====")
 
         # 获取配置中的函数
         intent_module = self.config["selected_module"]["Intent"]
-        print(f"===== 当前Intent模块: {intent_module} =====")
 
         config_functions = self.config["Intent"][intent_module].get("functions", [])
-        print(f"===== 配置中的函数: {config_functions} =====")
 
         # 转换为列表
         if not isinstance(config_functions, list):
@@ -70,7 +67,6 @@ class ServerPluginExecutor(ToolExecutor):
 
         # 合并所有需要的函数
         all_required_functions = list(set(necessary_functions + config_functions))
-        print(f"===== 所有需要的函数: {all_required_functions} =====")
 
         for func_name in all_required_functions:
             func_item = all_function_registry.get(func_name)
@@ -80,11 +76,8 @@ class ServerPluginExecutor(ToolExecutor):
                     description=func_item.description,
                     tool_type=ToolType.SERVER_PLUGIN,
                 )
-                print(f"===== 已添加工具: {func_name} =====")
             else:
-                print(f"===== 警告：函数 {func_name} 在注册表中不存在 =====")
-
-        print(f"===== 最终工具列表: {list(tools.keys())} =====")
+                self.logger.warning(f"函数 {func_name} 在注册表中不存在")
         return tools
 
     def has_tool(self, tool_name: str) -> bool:

@@ -125,18 +125,6 @@ class UnifiedToolHandler:
         func_names = self.tool_manager.get_supported_tool_names()
         self.logger.info(f"当前支持的函数列表: {func_names}")
 
-        # 特别检查白噪音函数
-        if "play_white_noise" in func_names:
-            print("===== ✅ play_white_noise 在支持的函数列表中！ =====")
-            self.logger.info("===== ✅ play_white_noise 在支持的函数列表中！ =====")
-        else:
-            print("===== ❌ play_white_noise 不在支持的函数列表中！ =====")
-            self.logger.error("===== ❌ play_white_noise 不在支持的函数列表中！ =====")
-
-            # 检查所有工具类型
-            all_tools = self.tool_manager.get_all_tools()
-            print(f"===== 所有工具: {list(all_tools.keys())} =====")
-            self.logger.info(f"===== 所有工具: {list(all_tools.keys())} =====")
 
         return func_names
 

@@ -1,7 +1,4 @@
-# 极简版本，仅用于测试函数注册
-print("===== 开始导入白噪音模块 =====")
 from plugins_func.register import register_function, ToolType, ActionResponse, Action
-print("===== 白噪音模块基础导入完成 =====")
 
 TAG = __name__
 
@@ -26,12 +23,10 @@ play_white_noise_function_desc = {
 }
 
 
-print("===== 开始注册白噪音函数 =====")
 
 @register_function("play_white_noise", play_white_noise_function_desc, ToolType.SYSTEM_CTL)
 def play_white_noise(conn, noise_type: str):
     try:
-        print(f"===== 白噪音函数被调用了！！！noise_type={noise_type} =====")
 
         # 暂时直接返回成功响应，不执行复杂逻辑
         return ActionResponse(
@@ -43,16 +38,6 @@ def play_white_noise(conn, noise_type: str):
             action=Action.RESPONSE, result=str(e), response="播放白噪音时出错了"
         )
 
-print(f"===== 白噪音函数注册完成，函数名: play_white_noise =====")
-print(f"===== 模块导入完成: {__name__} =====")
-
-# 检查注册表
-from plugins_func.register import all_function_registry
-print(f"===== 当前注册表中的函数: {list(all_function_registry.keys())} =====")
-if "play_white_noise" in all_function_registry:
-    print("===== play_white_noise 已在注册表中！ =====")
-else:
-    print("===== 错误：play_white_noise 不在注册表中！ =====")
 
 
 def initialize_white_noise_config(conn):
