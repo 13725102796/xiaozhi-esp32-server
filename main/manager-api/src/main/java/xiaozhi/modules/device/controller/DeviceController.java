@@ -50,9 +50,10 @@ public class DeviceController {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    public DeviceController(DeviceService deviceService, RedisUtils redisUtils, SysParamsService sysParamsService,
+    public DeviceController(DeviceService deviceService, DeviceResetService deviceResetService, RedisUtils redisUtils, SysParamsService sysParamsService,
             RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.deviceService = deviceService;
+        this.deviceResetService = deviceResetService;
         this.redisUtils = redisUtils;
         this.sysParamsService = sysParamsService;
         this.restTemplate = restTemplate;
