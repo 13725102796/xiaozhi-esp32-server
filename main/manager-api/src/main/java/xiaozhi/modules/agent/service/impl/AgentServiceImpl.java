@@ -358,6 +358,14 @@ public class AgentServiceImpl extends BaseServiceImpl<AgentDao, AgentEntity> imp
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String createAgent(AgentCreateDTO dto) {
+        // 如果提供了音色ID，需要验证其是否存在
+        if (StringUtils.isNotBlank(dto.getTtsVoiceId())) {
+            String timbreName = timbreModelService.getTimbreNameById(dto.getTtsVoiceId());
+            if (StringUtils.isBlank(timbreName)) {
+                throw new RenException(ErrorCode.TIMBRE_NOT_FOUND);
+            }
+        }
+
         // 转换为实体
         AgentEntity entity = ConvertUtils.sourceToTarget(dto, AgentEntity.class);
 
@@ -370,7 +378,8 @@ public class AgentServiceImpl extends BaseServiceImpl<AgentDao, AgentEntity> imp
             entity.setLlmModelId(template.getLlmModelId());
             entity.setVllmModelId(template.getVllmModelId());
             entity.setTtsModelId(template.getTtsModelId());
-            entity.setTtsVoiceId(template.getTtsVoiceId());
+            // 如果用户提供了音色ID，使用用户提供的；否则使用模板默认的
+            entity.setTtsVoiceId(StringUtils.isNotBlank(dto.getTtsVoiceId()) ? dto.getTtsVoiceId() : template.getTtsVoiceId());
             entity.setMemModelId(template.getMemModelId());
             entity.setIntentModelId(template.getIntentModelId());
             entity.setSystemPrompt(template.getSystemPrompt());
