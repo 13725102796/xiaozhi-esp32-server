@@ -139,7 +139,7 @@ def get_music_files(music_dir, music_ext):
 def initialize_music_handler(conn):
     global MUSIC_CACHE
     # 强制重新初始化配置，确保读取最新的配置
-    if MUSIC_CACHE == {} or "white_noise_api_url" not in MUSIC_CACHE:
+    if True:  # 强制重新初始化配置
         if "play_music" in conn.config["plugins"]:
             MUSIC_CACHE["music_config"] = conn.config["plugins"]["play_music"]
             MUSIC_CACHE["music_dir"] = os.path.abspath(
@@ -159,6 +159,18 @@ def initialize_music_handler(conn):
         # 设置白噪音API配置
         # 尝试多种配置源
         base_url = None
+
+        # 调试日志：打印配置内容
+        conn.logger.bind(tag=TAG).info(f"调试: conn.config keys: {list(conn.config.keys())}")
+        if "api" in conn.config:
+            conn.logger.bind(tag=TAG).info(f"调试: api配置存在，内容: {conn.config['api']}")
+        else:
+            conn.logger.bind(tag=TAG).info("调试: api配置不存在")
+
+        if "stories-api" in conn.config:
+            conn.logger.bind(tag=TAG).info(f"调试: stories-api配置存在，内容: {conn.config['stories-api']}")
+        else:
+            conn.logger.bind(tag=TAG).info("调试: stories-api配置不存在")
 
         # 方法1: 从api配置读取
         if "api" in conn.config and "base_url" in conn.config["api"]:
