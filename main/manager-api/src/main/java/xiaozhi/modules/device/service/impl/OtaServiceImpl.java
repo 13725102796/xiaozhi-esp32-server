@@ -40,14 +40,14 @@ public class OtaServiceImpl extends BaseServiceImpl<OtaDao, OtaEntity> implement
 
     @Override
     public void update(OtaEntity entity) {
-        // 检查是否存在相同类型和版本的固件（排除当前记录）
+        // 检查是否存在相同固件名称和版本的固件（排除当前记录）
         QueryWrapper<OtaEntity> queryWrapper = new QueryWrapper<OtaEntity>()
-                .eq("type", entity.getType())
+                .eq("firmware_name", entity.getFirmwareName())
                 .eq("version", entity.getVersion())
                 .ne("id", entity.getId()); // 排除当前记录
 
         if (baseDao.selectCount(queryWrapper) > 0) {
-            throw new RuntimeException("已存在相同类型和版本的固件，请修改后重试");
+            throw new RuntimeException("已存在相同固件名称和版本的固件，请修改后重试");
         }
 
         entity.setUpdateDate(new Date());
@@ -62,8 +62,8 @@ public class OtaServiceImpl extends BaseServiceImpl<OtaDao, OtaEntity> implement
     @Override
     public boolean save(OtaEntity entity) {
         QueryWrapper<OtaEntity> queryWrapper = new QueryWrapper<OtaEntity>()
-                .eq("type", entity.getType());
-        // 同类固件只保留最新的一条
+                .eq("firmware_name", entity.getFirmwareName());
+        // 同固件名称只保留最新的一条
         List<OtaEntity> otaList = baseDao.selectList(queryWrapper);
         if (otaList != null && otaList.size() > 0) {
             OtaEntity otaBefore = otaList.getFirst();
@@ -78,6 +78,15 @@ public class OtaServiceImpl extends BaseServiceImpl<OtaDao, OtaEntity> implement
     public OtaEntity getLatestOta(String type) {
         QueryWrapper<OtaEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("type", type)
+                .orderByDesc("update_date")
+                .last("LIMIT 1");
+        return baseDao.selectOne(wrapper);
+    }
+
+    @Override
+    public OtaEntity getLatestOtaByFirmwareName(String firmwareName) {
+        QueryWrapper<OtaEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("firmware_name", firmwareName)
                 .orderByDesc("update_date")
                 .last("LIMIT 1");
         return baseDao.selectOne(wrapper);

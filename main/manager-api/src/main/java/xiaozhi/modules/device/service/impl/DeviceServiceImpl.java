@@ -140,6 +140,14 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
     @Override
     public DeviceReportRespDTO checkDeviceActive(String macAddress, String clientId,
             DeviceReportReqDTO deviceReport) {
+        // 打印设备发送过来的更新检查信息
+        log.info("收到设备更新检查请求：macAddress[{}], 设备类型[{}], 设备role[{}], 当前版本[{}], 芯片型号[{}]",
+                macAddress,
+                deviceReport.getBoard() != null ? deviceReport.getBoard().getType() : "null",
+                deviceReport.getBoard() != null ? deviceReport.getBoard().getRole() : "null",
+                deviceReport.getApplication() != null ? deviceReport.getApplication().getVersion() : "null",
+                deviceReport.getChipModelName());
+
         DeviceReportRespDTO response = new DeviceReportRespDTO();
         response.setServer_time(buildServerTime());
 
@@ -156,7 +164,8 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
             // 只有在设备已绑定且autoUpdate不为0的情况下才返回固件升级信息
             if (deviceById.getAutoUpdate() != 0) {
                 String type = deviceReport.getBoard() == null ? null : deviceReport.getBoard().getType();
-                DeviceReportRespDTO.Firmware firmware = buildFirmwareInfo(type,
+                String role = deviceReport.getBoard() == null ? null : deviceReport.getBoard().getRole();
+                DeviceReportRespDTO.Firmware firmware = buildFirmwareInfo(type, role,
                         deviceReport.getApplication() == null ? null : deviceReport.getApplication().getVersion());
                 response.setFirmware(firmware);
             }
@@ -371,20 +380,35 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
         return code;
     }
 
-    private DeviceReportRespDTO.Firmware buildFirmwareInfo(String type, String currentVersion) {
-        if (StringUtils.isBlank(type)) {
-            return null;
-        }
+    private DeviceReportRespDTO.Firmware buildFirmwareInfo(String type, String deviceRole, String currentVersion) {
         if (StringUtils.isBlank(currentVersion)) {
             currentVersion = "0.0.0";
         }
 
-        OtaEntity ota = otaService.getLatestOta(type);
+        OtaEntity ota = null;
         DeviceReportRespDTO.Firmware firmware = new DeviceReportRespDTO.Firmware();
         String downloadUrl = null;
 
+        // 优先通过设备role查找对应名称的固件
+        if (StringUtils.isNotBlank(deviceRole)) {
+            ota = otaService.getLatestOtaByFirmwareName(deviceRole);
+            if (ota != null) {
+                log.info("通过设备role[{}]找到匹配的固件：[{}], 版本[{}]", deviceRole, ota.getFirmwareName(), ota.getVersion());
+            } else {
+                log.info("未找到设备role[{}]对应的固件", deviceRole);
+            }
+        }
+
+        // 如果通过role没有找到固件，且设备类型不为空，则尝试通过类型查找（向后兼容）
+        if (ota == null && StringUtils.isNotBlank(type)) {
+            ota = otaService.getLatestOta(type);
+            if (ota != null) {
+                log.info("通过设备类型[{}]找到固件：[{}], 版本[{}]", type, ota.getFirmwareName(), ota.getVersion());
+            }
+        }
+
         if (ota != null) {
-            // 如果设备没有版本信息，或者OTA版本比设备版本新，则返回下载地址
+            // 只有在OTA版本比设备版本新的情况下才返回下载地址
             if (compareVersions(ota.getVersion(), currentVersion) > 0) {
                 String otaUrl = sysParamsService.getValue(Constant.SERVER_OTA, true);
                 if (StringUtils.isBlank(otaUrl) || otaUrl.equals("null")) {
@@ -399,6 +423,10 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
                 String uuid = UUID.randomUUID().toString();
                 redisUtils.set(RedisKeys.getOtaIdKey(uuid), ota.getId());
                 downloadUrl = otaUrl.replace("/ota/", "/otaMag/download/") + uuid;
+                log.info("推送固件包：固件名称[{}], 版本[{}], 设备类型[{}], 设备role[{}]",
+                        ota.getFirmwareName(), ota.getVersion(), type, deviceRole);
+            } else {
+                log.info("固件版本[{}]不高于设备当前版本[{}]，跳过推送", ota.getVersion(), currentVersion);
             }
         }
 

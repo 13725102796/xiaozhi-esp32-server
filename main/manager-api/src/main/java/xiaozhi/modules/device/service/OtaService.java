@@ -19,4 +19,6 @@ public interface OtaService extends BaseService<OtaEntity> {
     void delete(String[] ids);
 
     OtaEntity getLatestOta(String type);
+
+    OtaEntity getLatestOtaByFirmwareName(String firmwareName);
 }
