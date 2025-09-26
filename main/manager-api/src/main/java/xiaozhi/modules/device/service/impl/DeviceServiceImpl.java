@@ -150,6 +150,7 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
             DeviceReportRespDTO.Firmware firmware = new DeviceReportRespDTO.Firmware();
             firmware.setVersion(deviceReport.getApplication().getVersion());
             firmware.setUrl(Constant.INVALID_FIRMWARE_URL);
+            firmware.setRole(""); // 未绑定设备固件名称为空字符串
             response.setFirmware(firmware);
         } else {
             // 只有在设备已绑定且autoUpdate不为0的情况下才返回固件升级信息
@@ -403,6 +404,7 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
 
         firmware.setVersion(ota == null ? currentVersion : ota.getVersion());
         firmware.setUrl(downloadUrl == null ? Constant.INVALID_FIRMWARE_URL : downloadUrl);
+        firmware.setRole(ota == null ? "" : (ota.getFirmwareName() == null ? "" : ota.getFirmwareName()));
         return firmware;
     }
 

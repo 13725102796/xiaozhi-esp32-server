@@ -33,6 +33,8 @@ public class DeviceReportRespDTO {
         private String version;
         @Schema(description = "下载地址")
         private String url;
+        @Schema(description = "固件名称")
+        private String role;
     }
 
     public static DeviceReportRespDTO createError(String message) {

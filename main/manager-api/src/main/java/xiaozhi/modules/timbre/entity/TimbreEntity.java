@@ -3,7 +3,9 @@ package xiaozhi.modules.timbre.entity;
 import java.util.Date;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -22,6 +24,7 @@ import lombok.EqualsAndHashCode;
 @Schema(description = "音色信息")
 public class TimbreEntity {
 
+    @TableId(type = IdType.ASSIGN_UUID)
     @Schema(description = "id")
     private String id;
 

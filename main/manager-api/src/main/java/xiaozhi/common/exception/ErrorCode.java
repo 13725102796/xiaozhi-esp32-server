@@ -113,6 +113,7 @@ public interface ErrorCode {
     // 智能体相关错误码
     int LLM_INTENT_PARAMS_MISMATCH = 10079; // LLM大模型和Intent意图识别，选择参数不匹配
     int TIMBRE_NOT_FOUND = 10127; // 音色不存在
+    int TTS_MODEL_NOT_FOUND = 10129; // TTS模型不存在
     
     // 声纹相关错误码
     int VOICEPRINT_ALREADY_REGISTERED = 10080; // 此声音声纹已经注册

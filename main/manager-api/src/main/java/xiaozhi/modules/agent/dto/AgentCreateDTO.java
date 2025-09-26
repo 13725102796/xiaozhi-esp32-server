@@ -19,6 +19,9 @@ public class AgentCreateDTO implements Serializable {
     @NotBlank(message = "智能体名称不能为空")
     private String agentName;
 
+    @Schema(description = "TTS模型标识", example = "c1a23ed69a8005d3ad82abe5297c625a", nullable = true)
+    private String ttsModelId;
+
     @Schema(description = "音色标识", example = "voice_02", nullable = true)
     private String ttsVoiceId;
 }

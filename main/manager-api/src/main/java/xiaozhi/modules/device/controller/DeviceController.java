@@ -56,6 +56,7 @@ public class DeviceController {
         this.deviceResetService = deviceResetService;
         this.redisUtils = redisUtils;
         this.sysParamsService = sysParamsService;
+
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
     }
